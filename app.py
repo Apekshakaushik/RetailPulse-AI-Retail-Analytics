@@ -1,231 +1,77 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from pathlib import Path
 from components.sidebar import render_sidebar
 
-# -----------------------------------------------------
+# ============================================================
 # PAGE CONFIG
-# -----------------------------------------------------
+# ============================================================
 
 st.set_page_config(
     page_title="RetailPulse AI",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
+
 render_sidebar()
-# -----------------------------------------------------
-# LOAD CSS
-# -----------------------------------------------------
+
+# ============================================================
+# LOAD DESIGN SYSTEM (assets/style.css)
+# ============================================================
 
 css_file = Path("assets/style.css")
-
 if css_file.exists():
-
     with open(css_file) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-        st.markdown(
-            f"<style>{f.read()}</style>",
-            unsafe_allow_html=True
-        )
-
-# -----------------------------------------------------
+# ============================================================
 # LOAD DATA
-# -----------------------------------------------------
+# ============================================================
 
 @st.cache_data
 def load_data():
-
     df = pd.read_csv("data/cleaned_retail.csv")
-
     df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
-
     return df
 
 df = load_data()
 
-# -----------------------------------------------------
-# KPIs
-# -----------------------------------------------------
+# ============================================================
+# CORE METRICS
+# ============================================================
 
 revenue = df["TotalPrice"].sum()
-
 customers = df["Customer ID"].nunique()
-
 orders = df["Invoice"].nunique()
-
 products = df["StockCode"].nunique()
 
-# -----------------------------------------------------
-# HERO SECTION
-# -----------------------------------------------------
+avg_order_value = revenue / orders
+avg_customer_value = revenue / customers
 
-st.markdown("""
+daily_sales = (
+    df.groupby(df["InvoiceDate"].dt.date)["TotalPrice"]
+    .sum()
+    .reset_index()
+)
+daily_sales.columns = ["Date", "Revenue"]
 
-<div style="background:linear-gradient(90deg,#2563eb,#1d4ed8);
-padding:30px;
-border-radius:20px;
-margin-bottom:20px;">
-
-<h1 style="color:white;margin:0;">
-📊 RetailPulse AI
-</h1>
-
-<h4 style="color:white;margin-top:10px;">
-AI-Powered Retail Intelligence Platform
-</h4>
-
-<p style="color:white;font-size:18px;">
-Transform Retail Data into Actionable Business Insights
-</p>
-
-</div>
-
-""",unsafe_allow_html=True)
-
-# -----------------------------------------------------
-# KPI CARDS
-# -----------------------------------------------------
-
-c1,c2,c3,c4=st.columns(4)
-
-with c1:
-
-    st.metric(
-        "💰 Revenue",
-        f"£{revenue:,.2f}"
-    )
-
-with c2:
-
-    st.metric(
-        "👥 Customers",
-        f"{customers:,}"
-    )
-
-with c3:
-
-    st.metric(
-        "📦 Products",
-        f"{products:,}"
-    )
-
-with c4:
-
-    st.metric(
-        "🛒 Orders",
-        f"{orders:,}"
-    )
-
-st.divider()
-
-# -----------------------------------------------------
-# QUICK SUMMARY
-# -----------------------------------------------------
-
-left,right=st.columns([2,1])
-
-with left:
-
-    daily_sales=(
-
-        df.groupby(
-
-            df["InvoiceDate"].dt.date
-
-        )["TotalPrice"]
-
-        .sum()
-
-        .reset_index()
-
-    )
-
-    daily_sales.columns=[
-
-        "Date",
-
-        "Revenue"
-
-    ]
-
-    fig=px.area(
-
-        daily_sales,
-
-        x="Date",
-
-        y="Revenue",
-
-        title="📈 Daily Revenue Trend",
-
-        color_discrete_sequence=["#3B82F6"]
-
-    )
-
-    fig.update_layout(
-
-        template="plotly_dark",
-
-        height=420,
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)"
-
-    )
-
-    st.plotly_chart(
-
-        fig,
-
-        use_container_width=True
-
-    )
-
-with right:
-
-    st.markdown("## 🤖 Executive Summary")
-
-    st.success(f"""
-
-### Business Snapshot
-
-💰 Revenue
-
-**£{revenue:,.2f}**
-
-👥 Customers
-
-**{customers:,}**
-
-📦 Products
-
-**{products:,}**
-
-🛒 Orders
-
-**{orders:,}**
-
-""")
-
-st.divider()
-# -----------------------------------------------------
-# MONTHLY REVENUE
-# -----------------------------------------------------
+# simple week-over-week trend for KPI badges
+if len(daily_sales) >= 14:
+    last7 = daily_sales.tail(7)["Revenue"].sum()
+    prev7 = daily_sales.tail(14).head(7)["Revenue"].sum()
+    revenue_trend = ((last7 - prev7) / prev7 * 100) if prev7 else 0
+else:
+    revenue_trend = 0
 
 monthly = (
     df.groupby(df["InvoiceDate"].dt.to_period("M"))["TotalPrice"]
     .sum()
     .reset_index()
 )
-
 monthly["InvoiceDate"] = monthly["InvoiceDate"].astype(str)
-
-# -----------------------------------------------------
-# TOP PRODUCTS
-# -----------------------------------------------------
 
 top_products = (
     df.groupby("Description")["Quantity"]
@@ -235,10 +81,6 @@ top_products = (
     .reset_index()
 )
 
-# -----------------------------------------------------
-# TOP COUNTRIES
-# -----------------------------------------------------
-
 top_countries = (
     df.groupby("Country")["TotalPrice"]
     .sum()
@@ -247,612 +89,264 @@ top_countries = (
     .reset_index()
 )
 
-# -----------------------------------------------------
-# DASHBOARD ROW 2
-# -----------------------------------------------------
+country_share = df.groupby("Country")["TotalPrice"].sum().reset_index()
 
-left,right = st.columns(2)
+highest_country = top_countries.iloc[0]["Country"]
+highest_product = top_products.iloc[0]["Description"]
+
+# ============================================================
+# SHARED PLOTLY THEME
+# ============================================================
+
+FONT = "Inter, -apple-system, Segoe UI, sans-serif"
+GRID_COLOR = "rgba(255,255,255,.06)"
+TEXT_COLOR = "#94A3B8"
+
+
+def style_fig(fig, height=400):
+    fig.update_layout(
+        template="plotly_dark",
+        height=height,
+        margin=dict(l=10, r=10, t=50, b=10),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family=FONT, color=TEXT_COLOR, size=13),
+        title=dict(font=dict(size=16, color="#E2E8F0", family=FONT)),
+        legend=dict(
+            bgcolor="rgba(0,0,0,0)",
+            bordercolor="rgba(0,0,0,0)",
+            font=dict(color=TEXT_COLOR, size=12),
+        ),
+        hoverlabel=dict(
+            bgcolor="#1E293B",
+            font=dict(family=FONT, color="#F1F5F9", size=12),
+            bordercolor="rgba(255,255,255,.1)",
+        ),
+        xaxis=dict(showgrid=False, zeroline=False, linecolor=GRID_COLOR),
+        yaxis=dict(showgrid=True, gridcolor=GRID_COLOR, zeroline=False),
+    )
+    return fig
+
+
+# ============================================================
+# HERO SECTION
+# ============================================================
+
+st.markdown(
+    """
+<div class="hero-card">
+  <div class="hero-eyebrow">ENTERPRISE RETAIL INTELLIGENCE</div>
+  <h1 class="hero-title">RetailPulse AI</h1>
+  <p class="hero-subtitle">
+    Turning raw transaction data into revenue-driving decisions —
+    sales analytics, customer intelligence, demand forecasting and
+    inventory optimization in a single platform.
+  </p>
+  <div class="hero-tags">
+    <span class="hero-tag">📈 Sales Analytics</span>
+    <span class="hero-tag">👥 Customer Intelligence</span>
+    <span class="hero-tag">🤖 Machine Learning</span>
+    <span class="hero-tag">📦 Inventory Optimization</span>
+  </div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+# ============================================================
+# 4 PREMIUM KPI CARDS
+# ============================================================
+
+trend_display = f"{'▲' if revenue_trend >= 0 else '▼'} {abs(revenue_trend):.1f}% vs prior week"
+
+kpis = [
+    ("💰", "Total Revenue", f"£{revenue:,.0f}", "#22C55E", trend_display),
+    ("👥", "Customers", f"{customers:,}", "#3B82F6", "Unique buyers"),
+    ("📦", "Products", f"{products:,}", "#F59E0B", "Active SKUs"),
+    ("🛒", "Orders", f"{orders:,}", "#A855F7", "Total invoices"),
+]
+
+cols = st.columns(4)
+for col, (icon, label, value, color, note) in zip(cols, kpis):
+    with col:
+        st.markdown(
+            f"""
+<div class="kpi-card" style="--accent:{color};">
+  <div class="kpi-icon">{icon}</div>
+  <div class="kpi-label">{label}</div>
+  <div class="kpi-value">{value}</div>
+  <div class="kpi-note" style="color:{color};">{note}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+
+# ============================================================
+# REVENUE TREND + AI INSIGHTS
+# ============================================================
+
+left, right = st.columns([2, 1])
 
 with left:
+    fig = px.area(
+        daily_sales,
+        x="Date",
+        y="Revenue",
+        title="Daily Revenue Trend",
+        color_discrete_sequence=["#22C55E"],
+    )
+    fig.update_traces(line=dict(width=2.5), fillcolor="rgba(34,197,94,.12)")
+    style_fig(fig, height=420)
+    st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
+with right:
+    st.markdown(
+        f"""
+<div class="ai-card">
+  <div class="ai-header">
+    <span class="ai-badge">AI</span>
+    <span class="ai-title">Business Insights</span>
+  </div>
+  <div class="ai-body">
+    <div class="ai-row">
+      <span>🌍 Strongest market</span>
+      <b>{highest_country}</b>
+    </div>
+    <div class="ai-row">
+      <span>🔥 Best-selling product</span>
+      <b title="{highest_product}">{highest_product[:28] + ("…" if len(highest_product) > 28 else "")}</b>
+    </div>
+    <div class="ai-row">
+      <span>💳 Avg. order value</span>
+      <b>£{avg_order_value:,.2f}</b>
+    </div>
+    <div class="ai-row">
+      <span>👤 Avg. customer value</span>
+      <b>£{avg_customer_value:,.2f}</b>
+    </div>
+  </div>
+  <div class="ai-footer">
+    ✔ Revenue trend is {"positive" if revenue_trend >= 0 else "softening"}.<br>
+    ✔ Monitor stock for top-selling inventory.<br>
+    ✔ Customer activity remains healthy.
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+
+# ============================================================
+# MONTHLY REVENUE + TOP COUNTRIES
+# ============================================================
+
+left, right = st.columns(2)
+
+with left:
     fig2 = px.bar(
-
         monthly,
-
         x="InvoiceDate",
-
         y="TotalPrice",
-
-        title="📅 Monthly Revenue",
-
+        title="Monthly Revenue",
         color="TotalPrice",
-
-        color_continuous_scale="Blues"
-
+        color_continuous_scale=["#1E3A8A", "#3B82F6", "#93C5FD"],
     )
-
-    fig2.update_layout(
-
-        template="plotly_dark",
-
-        height=430,
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)",
-
-        coloraxis_showscale=False
-
-    )
-
-    st.plotly_chart(
-
-        fig2,
-
-        use_container_width=True
-
-    )
+    fig2.update_layout(coloraxis_showscale=False)
+    style_fig(fig2, height=400)
+    st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+    st.plotly_chart(fig2, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-
     fig3 = px.bar(
-
         top_countries,
-
         x="Country",
-
         y="TotalPrice",
-
-        title="🌍 Top Countries",
-
+        title="Top Countries by Revenue",
         color="TotalPrice",
-
-        color_continuous_scale="Viridis"
-
+        color_continuous_scale=["#78350F", "#F59E0B", "#FCD34D"],
     )
+    fig3.update_layout(coloraxis_showscale=False)
+    style_fig(fig3, height=400)
+    st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+    st.plotly_chart(fig3, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    fig3.update_layout(
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-        template="plotly_dark",
+# ============================================================
+# TOP PRODUCTS + REVENUE DISTRIBUTION
+# ============================================================
 
-        height=430,
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)",
-
-        coloraxis_showscale=False
-
-    )
-
-    st.plotly_chart(
-
-        fig3,
-
-        use_container_width=True
-
-    )
-
-st.divider()
-
-# -----------------------------------------------------
-# DASHBOARD ROW 3
-# -----------------------------------------------------
-
-left,right = st.columns(2)
+left, right = st.columns(2)
 
 with left:
-
     fig4 = px.bar(
-
         top_products,
-
         x="Quantity",
-
         y="Description",
-
         orientation="h",
-
-        title="🔥 Top Selling Products",
-
+        title="Top Selling Products",
         color="Quantity",
-
-        color_continuous_scale="Turbo"
-
+        color_continuous_scale=["#4C1D95", "#A855F7", "#D8B4FE"],
     )
-
-    fig4.update_layout(
-
-        template="plotly_dark",
-
-        height=500,
-
-        paper_bgcolor="rgba(0,0,0,0)",
-
-        plot_bgcolor="rgba(0,0,0,0)",
-
-        coloraxis_showscale=False,
-
-        yaxis_title=""
-
-    )
-
-    st.plotly_chart(
-
-        fig4,
-
-        use_container_width=True
-
-    )
+    fig4.update_layout(coloraxis_showscale=False, yaxis_title="")
+    fig4.update_yaxes(autorange="reversed")
+    style_fig(fig4, height=460)
+    st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+    st.plotly_chart(fig4, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 with right:
-
-    st.markdown("## 🧠 AI Business Insights")
-
-    highest_country = top_countries.iloc[0]["Country"]
-
-    highest_product = top_products.iloc[0]["Description"]
-
-    st.info(f"""
-
-### 📈 Revenue Insights
-
-🌍 Highest Revenue Market
-
-**{highest_country}**
-
-🔥 Best Selling Product
-
-**{highest_product}**
-
-💰 Total Revenue
-
-**£{revenue:,.2f}**
-
-👥 Active Customers
-
-**{customers:,}**
-
-📦 Products Sold
-
-**{products:,}**
-
-🛒 Orders Processed
-
-**{orders:,}**
-
-""")
-
-    st.success("""
-
-### 🚀 Recommendations
-
-✅ Focus marketing on the highest revenue country.
-
-✅ Maintain higher inventory for top-selling products.
-
-✅ Reward loyal customers with exclusive offers.
-
-✅ Monitor monthly sales trends for seasonal demand.
-
-""")
-
-st.divider()
-# -----------------------------------------------------
-# QUICK ANALYTICS
-# -----------------------------------------------------
-
-st.markdown("## 📌 Quick Analytics")
-
-a1,a2,a3 = st.columns(3)
-
-with a1:
-
-    avg_order_value = revenue / orders
-
-    st.metric(
-
-        "💳 Average Order Value",
-
-        f"£{avg_order_value:,.2f}"
-
+    fig5 = px.pie(
+        country_share,
+        names="Country",
+        values="TotalPrice",
+        hole=0.62,
+        title="Revenue Distribution by Country",
+        color_discrete_sequence=[
+            "#22C55E", "#3B82F6", "#F59E0B", "#A855F7",
+            "#EC4899", "#14B8A6", "#EAB308", "#6366F1",
+        ],
     )
+    fig5.update_traces(textinfo="none", hovertemplate="%{label}<br>£%{value:,.0f}<extra></extra>")
+    style_fig(fig5, height=460)
+    st.markdown('<div class="chart-shell">', unsafe_allow_html=True)
+    st.plotly_chart(fig5, use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-with a2:
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-    avg_customer_value = revenue / customers
-
-    st.metric(
-
-        "👤 Customer Lifetime Value",
-
-        f"£{avg_customer_value:,.2f}"
-
-    )
-
-with a3:
-
-    avg_product_sales = revenue / products
-
-    st.metric(
-
-        "📦 Revenue / Product",
-
-        f"£{avg_product_sales:,.2f}"
-
-    )
-
-st.divider()
-
-# -----------------------------------------------------
-# COUNTRY REVENUE SHARE
-# -----------------------------------------------------
-
-st.markdown("## 🌍 Revenue Distribution")
-
-country_share = (
-
-    df.groupby("Country")["TotalPrice"]
-
-    .sum()
-
-    .reset_index()
-
-)
-
-fig5 = px.pie(
-
-    country_share,
-
-    names="Country",
-
-    values="TotalPrice",
-
-    hole=0.55,
-
-    color_discrete_sequence=px.colors.qualitative.Bold
-
-)
-
-fig5.update_layout(
-
-    template="plotly_dark",
-
-    height=600,
-
-    paper_bgcolor="rgba(0,0,0,0)",
-
-    plot_bgcolor="rgba(0,0,0,0)"
-
-)
-
-st.plotly_chart(
-
-    fig5,
-
-    use_container_width=True
-
-)
-
-st.divider()
-
-# -----------------------------------------------------
-# DATASET PREVIEW
-# -----------------------------------------------------
-
-st.markdown("## 🗂 Retail Dataset Preview")
-
-preview = df.copy()
-
-preview["InvoiceDate"] = preview["InvoiceDate"].dt.strftime("%d-%m-%Y")
-
-st.dataframe(
-
-    preview.head(20),
-
-    use_container_width=True,
-
-    hide_index=True
-
-)
-
-st.divider()
-
-# -----------------------------------------------------
+# ============================================================
 # DOWNLOAD REPORT
-# -----------------------------------------------------
+# ============================================================
 
-st.markdown("## 📥 Export Report")
+st.markdown('<div class="section-heading">Export</div>', unsafe_allow_html=True)
 
 csv = df.to_csv(index=False).encode("utf-8")
-
 st.download_button(
-
-    label="⬇ Download Cleaned Dataset",
-
+    label="⬇ Download Cleaned Dataset (CSV)",
     data=csv,
-
     file_name="RetailPulse_Data.csv",
-
-    mime="text/csv"
-
+    mime="text/csv",
 )
 
-st.divider()
-
-# -----------------------------------------------------
-# TECHNOLOGY STACK
-# -----------------------------------------------------
-
-left,right = st.columns(2)
-
-with left:
-
-    st.markdown("## ⚙️ Technologies")
-
-    st.success("""
-
-🐍 Python
-
-🐼 Pandas
-
-📊 Plotly
-
-🤖 Scikit-Learn
-
-📈 Prophet
-
-🌐 Streamlit
-
-""")
-
-with right:
-
-    st.markdown("## 📂 Project Modules")
-
-    st.info("""
-
-🏠 Dashboard
-
-📊 Sales Analytics
-
-👥 Customer Analytics
-
-📈 Demand Forecasting
-
-⚠️ Churn Prediction
-
-📦 Inventory Optimization
-
-ℹ️ About
-
-""")
-
-st.divider()
-# -----------------------------------------------------
-# EXECUTIVE DASHBOARD
-# -----------------------------------------------------
-
-st.markdown("## 📈 Executive Dashboard")
-
-highest_country = (
-    df.groupby("Country")["TotalPrice"]
-    .sum()
-    .idxmax()
-)
-
-highest_product = (
-    df.groupby("Description")["Quantity"]
-    .sum()
-    .idxmax()
-)
-
-highest_sales_day = (
-    daily_sales.sort_values(
-        "Revenue",
-        ascending=False
-    )
-    .iloc[0]
-)
-
-executive = pd.DataFrame({
-
-    "Metric":[
-
-        "Highest Revenue Country",
-
-        "Best Selling Product",
-
-        "Highest Sales Day",
-
-        "Average Order Value",
-
-        "Average Customer Value"
-
-    ],
-
-    "Value":[
-
-        highest_country,
-
-        highest_product,
-
-        str(highest_sales_day["Date"]),
-
-        f"£{avg_order_value:,.2f}",
-
-        f"£{avg_customer_value:,.2f}"
-
-    ]
-
-})
-
-st.dataframe(
-
-    executive,
-
-    use_container_width=True,
-
-    hide_index=True
-
-)
-
-st.divider()
-
-# -----------------------------------------------------
-# AI SUMMARY
-# -----------------------------------------------------
-
-st.markdown("## 🤖 AI Executive Summary")
-
-st.success(f"""
-
-### RetailPulse AI Summary
-
-📊 Total Revenue:
-**£{revenue:,.2f}**
-
-👥 Customers:
-**{customers:,}**
-
-🛒 Orders:
-**{orders:,}**
-
-📦 Products:
-**{products:,}**
-
-🌍 Strongest Market:
-**{highest_country}**
-
-🔥 Best Selling Product:
-**{highest_product}**
-
-📈 Business Health:
-**Healthy Growth**
-
-""")
-
-st.info("""
-
-### Recommended Actions
-
-✅ Increase stock for high-demand products.
-
-✅ Focus promotions on high-value customers.
-
-✅ Continue customer retention campaigns.
-
-✅ Monitor monthly revenue for seasonal changes.
-
-✅ Review inventory weekly using forecast reports.
-
-""")
-
-st.divider()
-
-# -----------------------------------------------------
-# PROJECT INFORMATION
-# -----------------------------------------------------
-
-st.markdown("## ℹ️ About RetailPulse AI")
-
-st.write("""
-
-RetailPulse AI is an AI-powered Retail Intelligence Platform
-developed to help businesses analyze sales,
-understand customer behavior,
-forecast demand,
-predict churn,
-and optimize inventory.
-
-The application combines Business Intelligence,
-Machine Learning,
-Data Analytics,
-and Interactive Dashboards
-into one unified platform.
-
-""")
-
-st.divider()
-
-# -----------------------------------------------------
-# DEVELOPER
-# -----------------------------------------------------
-
-st.markdown("## 👩‍💻 Developer")
-
-col1, col2 = st.columns([1,3])
-
-with col1:
-
-    st.image(
-        "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-        width=120
-    )
-
-with col2:
-
-    st.markdown("""
-
-### Apeksha Kaushik
-
-**B.Tech Computer Science Engineering**
-
-Aspiring Data Scientist | Machine Learning Enthusiast
-
-#### Skills
-
-- Python
-- Machine Learning
-- Data Analytics
-- SQL
-- Streamlit
-- Pandas
-- Scikit-Learn
-- Prophet
-- Plotly
-
-""")
-
-st.divider()
-
-# -----------------------------------------------------
+# ============================================================
 # FOOTER
-# -----------------------------------------------------
+# ============================================================
 
-st.markdown("""
-
----
-
-<div style='text-align:center;
-padding:20px;
-border-radius:12px;
-background:#111827;'>
-
-<h3 style='color:white;'>
-
-📊 RetailPulse AI
-
-</h3>
-
-<p style='color:#9CA3AF;'>
-
-AI-Powered Retail Intelligence Platform
-
-</p>
-
-<p style='color:#9CA3AF;'>
-
-Developed by <b>Apeksha Kaushik</b>
-
-</p>
-
-<p style='color:#9CA3AF;'>
-
-© 2026 All Rights Reserved
-
-</p>
-
+st.markdown(
+    """
+<div class="app-footer">
+  <div class="footer-title">📊 RetailPulse AI</div>
+  <div class="footer-sub">AI-Powered Retail Intelligence Platform</div>
+  <div class="footer-meta">Developed by Apeksha Kaushik · © 2026 All Rights Reserved</div>
 </div>
-
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
