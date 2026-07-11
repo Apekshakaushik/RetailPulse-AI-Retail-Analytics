@@ -13,10 +13,10 @@ st.set_page_config(
     layout="wide"
 )
 
+render_sidebar()
+
 from auth import require_login
 require_login()
-
-render_sidebar()
 # --------------------------------------------------
 # LOAD DATA
 # --------------------------------------------------
