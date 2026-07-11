@@ -70,4 +70,16 @@ def require_login():
                     st.session_state.user_email = email.strip()
                     st.rerun()
 
+        st.markdown(
+            '<div style="text-align:center;color:#64748B;font-size:12.5px;margin:10px 0;">— or —</div>',
+            unsafe_allow_html=True,
+        )
+
+        if st.button("👁 View as Guest", use_container_width=True):
+            st.session_state.user_authenticated = True
+            st.session_state.user_name = "Guest"
+            st.session_state.user_email = ""
+            st.session_state.is_guest = True
+            st.rerun()
+
     st.stop()  # nothing below this runs until authenticated
