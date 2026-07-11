@@ -1,204 +1,220 @@
 import streamlit as st
-from components.sidebar import render_sidebar
 from pathlib import Path
+from components.sidebar import render_sidebar
 
 st.set_page_config(
     page_title="About",
     page_icon="ℹ️",
-    layout="wide"
+    layout="wide",
 )
+
+from auth import require_login
+require_login()
 
 render_sidebar()
 
-# --------------------------------------------------
-# HERO
-# --------------------------------------------------
+# ============================================================
+# BRAND BADGE + HERO
+# ============================================================
 
-st.markdown("""
-<div style="background:linear-gradient(90deg,#2563eb,#7c3aed);
-padding:30px;
-border-radius:20px;
-margin-bottom:25px;">
+st.markdown(
+    """
+<div class="brand-badge">RETAILPULSE AI</div>
+<div class="brand-tagline">ENTERPRISE RETAIL ANALYTICS</div>
+""",
+    unsafe_allow_html=True,
+)
 
-<h1 style="color:white;margin-bottom:10px;">
-ℹ️ About RetailPulse AI
-</h1>
-
-<p style="color:white;font-size:18px;">
-AI-Powered Retail Intelligence Platform built using Machine Learning, Business Intelligence and Interactive Analytics.
-</p>
-
+st.markdown(
+    """
+<div class="hero-card">
+  <div class="hero-eyebrow">ABOUT THE PLATFORM</div>
+  <h1 class="hero-title">RetailPulse AI</h1>
+  <p class="hero-subtitle">
+    An AI-powered retail intelligence platform combining machine learning,
+    business analytics, and interactive dashboards into one enterprise product.
+  </p>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# --------------------------------------------------
-# PROFILE
-# --------------------------------------------------
+# ============================================================
+# DEVELOPER CREDIT — minimal, no fluff
+# ============================================================
 
-col1, col2 = st.columns([1, 2])
+st.markdown(
+    """
+<div class="dev-credit">
+  <div class="dev-avatar">AK</div>
+  <div class="dev-name">Developed by Apeksha Kaushik</div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
-with col1:
-    BASE_DIR = Path(__file__).resolve().parent.parent
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-PROFILE = BASE_DIR / "assets" / "profile.jpg"
-
-st.image("profile.jpg", width=260)
-
-with col2:
-
-    st.markdown("# 👩‍💻 Apeksha Kaushik")
-
-    st.markdown("""
-### Data Scientist | Machine Learning Enthusiast
-
-🎓 **B.Tech Computer Science Engineering**
-
-📍 **India**
-
-I enjoy building data-driven applications that solve real-world business problems using Machine Learning, Data Analytics and Business Intelligence.
-
-RetailPulse AI combines analytics and predictive models into one platform that helps businesses understand sales performance, customer behaviour, demand trends and inventory planning.
-""")
-
-st.divider()
-
-# --------------------------------------------------
+# ============================================================
 # PROJECT OVERVIEW
-# --------------------------------------------------
+# ============================================================
 
-st.header("📊 Project Overview")
+st.markdown('<div class="section-heading">Project Overview</div>', unsafe_allow_html=True)
 
-st.info("""
-RetailPulse AI is an AI-powered Retail Analytics Platform developed using Python and Streamlit.
+st.markdown(
+    """
+<div class="chart-shell" style="padding:22px;">
+  <p style="color:#CBD5E1;font-size:14.5px;line-height:1.9;margin:0;">
+    RetailPulse AI is an AI-powered retail analytics platform built with Python and Streamlit.
+    It enables businesses to analyze sales performance, understand customer purchasing behaviour,
+    forecast future demand, predict customer churn, optimize inventory, and generate interactive
+    business insights — all from a single platform.
+  </p>
+</div>
+""",
+    unsafe_allow_html=True,
+)
 
-The application enables businesses to:
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-• Analyze retail sales performance
+# ============================================================
+# KEY FEATURES
+# ============================================================
 
-• Understand customer purchasing behaviour
-
-• Forecast future demand
-
-• Predict customer churn
-
-• Optimize inventory
-
-• Generate interactive business insights
-""")
-
-st.divider()
-
-# --------------------------------------------------
-# FEATURES
-# --------------------------------------------------
-
-st.header("🚀 Key Features")
+st.markdown('<div class="section-heading">Key Features</div>', unsafe_allow_html=True)
 
 c1, c2 = st.columns(2)
 
 with c1:
-
-    st.success("""
-### 📊 Analytics
-
-✔ Sales Dashboard
-
-✔ Customer Analytics
-
-✔ Revenue Analysis
-
-✔ Product Insights
-
-✔ Country-wise Performance
-
-✔ Interactive Visualizations
-""")
+    st.markdown(
+        """
+<div class="ai-card">
+  <div class="ai-header">
+    <span class="ai-badge">📊</span>
+    <span class="ai-title">Analytics</span>
+  </div>
+  <div class="ai-footer">
+    ✔ Sales dashboard<br>
+    ✔ Customer analytics<br>
+    ✔ Revenue analysis<br>
+    ✔ Product insights<br>
+    ✔ Country-wise performance<br>
+    ✔ Interactive visualizations
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 with c2:
+    st.markdown(
+        """
+<div class="ai-card">
+  <div class="ai-header">
+    <span class="ai-badge">🤖</span>
+    <span class="ai-title">AI Modules</span>
+  </div>
+  <div class="ai-footer">
+    ✔ Customer segmentation<br>
+    ✔ Demand forecasting<br>
+    ✔ Churn prediction<br>
+    ✔ Inventory optimization<br>
+    ✔ Downloadable reports<br>
+    ✔ Business recommendations
+  </div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
-    st.success("""
-### 🤖 AI Modules
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-✔ Customer Segmentation
+# ============================================================
+# TECHNOLOGY STACK
+# ============================================================
 
-✔ Demand Forecasting
-
-✔ Churn Prediction
-
-✔ Inventory Optimization
-
-✔ Download Reports
-
-✔ Business Recommendations
-""")
-
-st.divider()
-
-# --------------------------------------------------
-# TECH STACK
-# --------------------------------------------------
-
-st.header("🛠 Technology Stack")
+st.markdown('<div class="section-heading">Technology Stack</div>', unsafe_allow_html=True)
 
 t1, t2, t3 = st.columns(3)
+stack = [
+    ("Programming", ["Python", "SQL", "Pandas", "NumPy"], "#3B82F6"),
+    ("Machine Learning", ["Scikit-Learn", "Prophet", "K-Means", "Random Forest"], "#A855F7"),
+    ("Dashboard", ["Streamlit", "Plotly", "Matplotlib", "GitHub"], "#22C55E"),
+]
 
-with t1:
+for col, (title, items, color) in zip([t1, t2, t3], stack):
+    with col:
+        rows = "".join(f"<div class='ai-row'><span>• {i}</span></div>" for i in items)
+        st.markdown(
+            f"""
+<div class="kpi-card" style="--accent:{color};min-height:auto;">
+  <div class="kpi-label">{title}</div>
+  <div style="margin-top:12px;">{rows}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("""
-### Programming
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-- Python
-- SQL
-- Pandas
-- NumPy
-""")
+# ============================================================
+# MODELS + PROJECT HIGHLIGHTS
+# ============================================================
 
-with t2:
+st.markdown('<div class="section-heading">Machine Learning Models</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-### Machine Learning
+m_cols = st.columns(4)
+model_stats = [
+    ("Customer Segmentation", "K-Means", "#3B82F6"),
+    ("Demand Forecasting", "Prophet", "#22C55E"),
+    ("Churn Prediction", "Random Forest", "#F59E0B"),
+    ("Dashboard Engine", "Streamlit", "#A855F7"),
+]
+for col, (label, value, color) in zip(m_cols, model_stats):
+    with col:
+        st.markdown(
+            f"""
+<div class="kpi-card" style="--accent:{color};min-height:110px;">
+  <div class="kpi-label">{label}</div>
+  <div class="kpi-value" style="font-size:22px;">{value}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
-- Scikit-Learn
-- Prophet
-- K-Means Clustering
-- Random Forest
-""")
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-with t3:
+h_cols = st.columns(4)
+highlight_stats = [
+    ("Modules", "6", "#3B82F6"),
+    ("ML Models", "3", "#22C55E"),
+    ("Charts", "20+", "#F59E0B"),
+    ("Reports", "5", "#A855F7"),
+]
+for col, (label, value, color) in zip(h_cols, highlight_stats):
+    with col:
+        st.markdown(
+            f"""
+<div class="kpi-card" style="--accent:{color};min-height:110px;">
+  <div class="kpi-label">{label}</div>
+  <div class="kpi-value" style="font-size:26px;">{value}</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("""
-### Dashboard
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
 
-- Streamlit
-- Plotly
-- Matplotlib
-- GitHub
-""")
-
-st.divider()
-
-# --------------------------------------------------
-# MODELS
-# --------------------------------------------------
-
-st.header("🤖 Machine Learning Models")
-
-m1, m2, m3, m4 = st.columns(4)
-
-m1.metric("Customer Segmentation", "K-Means")
-m2.metric("Demand Forecasting", "Prophet")
-m3.metric("Churn Prediction", "Random Forest")
-m4.metric("Dashboard", "Streamlit")
-
-st.divider()
-
-# --------------------------------------------------
+# ============================================================
 # WORKFLOW
-# --------------------------------------------------
+# ============================================================
 
-st.header("🔄 Project Workflow")
+st.markdown('<div class="section-heading">Project Workflow</div>', unsafe_allow_html=True)
 
-st.code("""
+st.markdown(
+    """
+<div class="chart-shell" style="padding:20px;">
+<pre style="color:#94A3B8;font-size:13px;line-height:1.7;margin:0;font-family:'Inter',monospace;">
 Retail Dataset
       │
       ▼
@@ -218,71 +234,42 @@ Interactive Dashboard
       │
       ▼
 Business Insights
-""")
-
-st.divider()
-
-# --------------------------------------------------
-# PROJECT STATISTICS
-# --------------------------------------------------
-
-st.header("📈 Project Highlights")
-
-a, b, c, d = st.columns(4)
-
-a.metric("Modules", "6")
-b.metric("ML Models", "3")
-c.metric("Charts", "20+")
-d.metric("Reports", "5")
-
-st.divider()
-
-# --------------------------------------------------
-# CONTACT
-# --------------------------------------------------
-
-st.header("📬 Connect With Me")
-
-st.markdown("""
-**👩‍💻 Apeksha Kaushik**
-
-🔗 **LinkedIn**
-
-https://www.linkedin.com/in/apeksha-kaushik-378000253
-
-💻 **GitHub**
-
-https://github.com/Apekshakaushik
-
-📧 **Email**
-
-apekshakaushik16@gmail.com
-""")
-
-st.divider()
-
-# --------------------------------------------------
-# FOOTER
-# --------------------------------------------------
-
-st.markdown("""
-<div style="text-align:center;padding:25px;">
-
-<h2 style="color:white;">
-📊 RetailPulse AI
-</h2>
-
-<p style="color:#B8C0CC;">
-AI-Powered Retail Intelligence Platform
-</p>
-
-<p style="color:#B8C0CC;">
-Developed by <b>Apeksha Kaushik</b>
-</p>
-
-<p style="color:#B8C0CC;">
-© 2026 All Rights Reserved
-</p>
-
+</pre>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
+st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+
+# ============================================================
+# CONTACT
+# ============================================================
+
+st.markdown('<div class="section-heading">Connect</div>', unsafe_allow_html=True)
+
+st.markdown(
+    """
+<div class="ai-card">
+  <div class="ai-row"><span>🔗 LinkedIn</span><b>apeksha-kaushik-378000253</b></div>
+  <div class="ai-row"><span>💻 GitHub</span><b>Apekshakaushik</b></div>
+  <div class="ai-row"><span>📧 Email</span><b>apekshakaushik16@gmail.com</b></div>
+</div>
+""",
+    unsafe_allow_html=True,
+)
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown(
+    """
+<div class="app-footer">
+  <div class="footer-title">📊 RetailPulse AI</div>
+  <div class="footer-sub">AI-Powered Retail Intelligence Platform</div>
+  <div class="footer-meta">Developed by Apeksha Kaushik · © 2026 All Rights Reserved</div>
+</div>
+""",
+    unsafe_allow_html=True,
+)

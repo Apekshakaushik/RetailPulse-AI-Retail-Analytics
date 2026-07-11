@@ -11,6 +11,10 @@ st.set_page_config(
     page_icon="👥",
     layout="wide"
 )
+
+from auth import require_login
+require_login()
+
 render_sidebar()
 # --------------------------------------------------
 # LOAD DATA
