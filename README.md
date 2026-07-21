@@ -99,23 +99,6 @@ RetailPulse-AI-Retail-Analytics/
 └── LICENSE
 ```
 
----
-
-## 📸 Dashboard Preview
-
-### Executive Dashboard
-
-> *(Add dashboard screenshot here)*
-
-### Customer Segmentation
-
-> *(Add customer segmentation screenshot here)*
-
-### Demand Forecasting
-
-> *(Add forecasting screenshot here)*
-
----
 
 ## 📥 Installation
 
